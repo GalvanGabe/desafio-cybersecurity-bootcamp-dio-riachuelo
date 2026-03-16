@@ -38,16 +38,15 @@ A máquina atacante foi utilizada para executar ferramentas de auditoria de segu
 
 ---
 
-## Ferramentas Utilizadas
+## 🛠️ Ferramentas Utilizadas
 
-Durante o laboratório foram utilizadas as seguintes ferramentas de segurança:
-
-- 🐉 Kali Linux  
-- 🔎 Nmap  
-- 🔐 Medusa  
-- ⚡ Hydra  
-- 🗂️ Enum4linux 
+- 🐉 Kali Linux
+- 🔎 Nmap
+- 🔐 Medusa
+- ⚡ Hydra
+- 🗂️ Enum4linux
 - 🌐 DVWA (Damn Vulnerable Web Application)
+- 🧪 Metasploitable 2
 
 ---
 
@@ -77,13 +76,15 @@ A máquina Kali Linux foi utilizada para executar ferramentas de auditoria de se
 
 Antes de iniciar qualquer tentativa de exploração, foi realizada a etapa de **reconhecimento**, com o objetivo de identificar serviços ativos na máquina alvo.
 
-Inicialmente foi identificado o endereço IP da máquina Metasploitable utilizando o comando: ip a
+Inicialmente foi identificado o endereço IP da máquina Metasploitable utilizando o comando:
+ip a
 
 <img src="images/recon/01_metasploitable_ip.png" width="650">
 
 ---
 
-Após identificar o endereço IP do alvo, foi realizado um scan de portas utilizando a ferramenta **Nmap** para identificar quais serviços estavam ativos. nmap -p 21,80,139,445 IP_DA_META
+Após identificar o endereço IP do alvo, foi realizado um scan de portas utilizando a ferramenta **Nmap** para identificar quais serviços estavam ativos.
+nmap -p 21,22,23,25,80,139,445 <IP_DA_METASPLOITABLE>
 
 <img src="images/recon/03_nmap_scan_services.png" width="650">
 
@@ -99,7 +100,8 @@ Esses serviços foram utilizados como alvo para simulação de ataques de força
 
 ## 🔓 Ataque 1 — Brute Force em FTP
 
-Após identificar que o serviço **FTP** estava ativo na porta 21, foi realizado um teste inicial de conexão para verificar se o serviço estava acessível. ftp IP_DA_META
+Após identificar que o serviço **FTP** estava ativo na porta 21, foi realizado um teste inicial de conexão para verificar se o serviço estava acessível.
+ftp <IP_DA_METASPLOITABLE>
 
 Como o objetivo do laboratório era demonstrar um ataque de força bruta, foram criadas pequenas wordlists contendo possíveis usuários e senhas.
 
@@ -107,12 +109,12 @@ Essas listas foram criadas diretamente no terminal utilizando o comando `echo`.
 
 Exemplo:
 
-echo -e "user1\nuser2" > users.txt
-echo -e "123456\npassword\nadmin" > passwords.txt
+echo -e "admin\nmsfadmin" > users.txt
+echo -e "123456\npassword\nadmin\nmsfadmin" > passwords.txt
 
 Após a criação das wordlists, foi utilizada a ferramenta **Medusa** para realizar o ataque de força bruta contra o serviço FTP.
+medusa -h <IP_DA_METASPLOITABLE> -U users.txt -P passwords.txt -M ftp
 
-medusa -h IP_DA_META -U users.txt -P passwords.txt -M ftp
 <img src="images/ftp_attack/03_ftp_medusa_bruteforce.png" width="650">
 
 Durante o processo de tentativa de autenticação, a ferramenta identificou uma combinação válida de usuário e senha.
@@ -142,7 +144,7 @@ Para esse cenário foi utilizada a ferramenta **Hydra**, que permite realizar at
 Assim como no ataque anterior, foram utilizadas pequenas wordlists contendo possíveis usuários e senhas criadas durante o laboratório.
 
 O comando utilizado para executar o ataque foi:
-hydra -L users.txt -P passwords.txt IP_DA_META http-post-form "/dvwa/login.php:username=^USER^&password=^PASS^&Login=Login:failed"
+hydra -L users.txt -P passwords.txt <IP_DA_METASPLOITABLE> http-post-form "/dvwa/login.php:username=^USER^&password=^PASS^&Login=Login:failed"
 
 Durante o processo de tentativa de autenticação, a ferramenta conseguiu identificar uma combinação válida de usuário e senha.
 
@@ -161,7 +163,7 @@ O terceiro cenário do laboratório envolveu a análise do serviço **SMB (Serve
 O protocolo SMB é amplamente utilizado em ambientes Windows para compartilhamento de arquivos, impressoras e outros recursos de rede. Quando mal configurado, esse serviço pode permitir a enumeração de informações sensíveis, como usuários do sistema.
 
 Inicialmente foi utilizada a ferramenta **Enum4linux** para realizar a enumeração de informações disponíveis no serviço SMB.
-enum4linux -a IP_DA_META
+enum4linux -a <IP_DA_METASPLOITABLE>
 
 <img src="images/smb_attack/02_smb_user_enumeration.png" width="650">
 
@@ -172,7 +174,7 @@ Após identificar os usuários, foi realizado um ataque do tipo **password spray
 Diferente do brute force tradicional, o password spraying utiliza poucas senhas testadas contra múltiplos usuários, reduzindo a chance de bloqueio de contas em sistemas que possuem mecanismos de proteção contra várias tentativas de login consecutivas.
 
 O comando utilizado para executar o ataque foi:
-medusa -h IP_DA_META -U users.txt -P passwords.txt -M smbnt
+medusa -h <IP_DA_METASPLOITABLE> -U users.txt -P passwords.txt -M smbnt
 
 <img src="images/smb_attack/04_medusa_smb_password_spraying.png" width="650">
 
@@ -247,3 +249,13 @@ Todos os testes foram realizados em máquinas vulneráveis criadas especificamen
 Nenhum sistema real ou ambiente de produção foi utilizado durante os experimentos.
 
 A execução dessas técnicas em sistemas sem autorização pode ser considerada atividade ilegal.
+
+## Aprendizados
+
+Durante a realização deste laboratório foi possível compreender na prática:
+
+- Como identificar serviços expostos em uma rede utilizando Nmap
+- Como ataques de força bruta funcionam em serviços FTP
+- Como automatizar tentativas de login em aplicações web
+- Como realizar enumeração de usuários em SMB
+- Como ataques de password spraying podem comprometer contas com senhas fracas
